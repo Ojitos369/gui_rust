@@ -1,7 +1,9 @@
+use std::cell::Cell;
+use std::rc::Rc;
+
 use gtk4 as gtk;
 use gtk::prelude::*;
 use gtk::{glib, Application, ApplicationWindow, Button, Orientation };
-use std::cell::Cell;
 use glib::clone;
 // use gtk::{glib, Application};
 
@@ -18,7 +20,7 @@ fn main() -> glib::ExitCode {
 }
 
 fn build_ui(app: &Application) {
-    let number = Cell::new(0);
+    let number = Rc::new(Cell::new(0));
     let text = format!("More: {}", number.get());
     let text2 = format!("Less: {}", number.get());
 
@@ -37,19 +39,21 @@ fn build_ui(app: &Application) {
         .margin_end(24)
         .build();
 
-    button.connect_clicked(clone! (@strong number => move |button| {
+    button.connect_clicked(clone! (@weak number, @weak d_button => move |button| {
         number.set(number.get() + 1);
-        println!("{}", number.get());
         let text = format!("More: {}", number.get());
         button.set_label(&text);
+        let otext = format!("Less: {}", number.get());
+        d_button.set_label(&otext);
     }));
 
-    d_button.connect_clicked(move |d_button| {
+    d_button.connect_clicked(clone!(@weak button => move |d_button| {
         number.set(number.get() - 1);
-        println!("{}", number.get());
         let text = format!("Less: {}", number.get());
         d_button.set_label(&text);
-    });
+        let otext = format!("More: {}", number.get());
+        button.set_label(&otext);
+    }));
 
 
     let gtk_box = gtk::Box::builder()
